@@ -6,6 +6,8 @@
     <title>CryptoMirato – Auto-Advisor & Analisi Crypto</title>
     <meta name="description" content="Scanner automatico per criptovalute. Suggerimenti di acquisto, target price e calcolo profitto netto basato su RSI.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
     
     <style>
         :root {
@@ -28,12 +30,24 @@
         ::-webkit-scrollbar-track { background: var(--bg-primary); }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
         
-        /* Layout e Utility */
+        /* Utility */
         .container { max-width: 1300px; margin: 0 auto; padding: 0 1rem; }
         .hidden { display: none !important; }
         .text-center { text-align: center; }
         .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
         @media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr; } }
+        
+        /* Auth Screen */
+        .auth-overlay { position: fixed; inset: 0; background: var(--bg-primary); z-index: 200; display: flex; align-items: center; justify-content: center; background-image: radial-gradient(circle at 50% 50%, rgba(46, 204, 113, 0.05) 0%, var(--bg-primary) 100%); }
+        .auth-box { background: var(--glass-bg); padding: 2.5rem; border-radius: 12px; border: 1px solid var(--border); width: 400px; max-width: 90vw; backdrop-filter: blur(12px); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        .auth-box h1 { font-size: 1.8rem; color: var(--text-primary); margin-bottom: 0.5rem; text-align: center; letter-spacing: -1px; }
+        .form-input { width: 100%; padding: 0.8rem; margin-bottom: 1rem; background: var(--bg-secondary); border: 1px solid var(--border); color: white; border-radius: 8px; font-family: 'Inter'; }
+        .form-input:focus { border-color: var(--accent-green); outline: none; box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.2); }
+        .btn-auth { width: 100%; padding: 0.8rem; background: var(--accent-green); border: none; color: black; font-weight: bold; border-radius: 8px; cursor: pointer; margin-bottom: 0.8rem; transition: transform 0.1s; }
+        .btn-auth:active { transform: scale(0.98); }
+        .btn-logout { background: transparent; border: 1px solid var(--accent-red); color: var(--accent-red); padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-weight: bold; }
+        .btn-logout:hover { background: rgba(231, 76, 60, 0.1); color: white; }
+        .auth-error { color: var(--accent-red); font-size: 0.85rem; margin-bottom: 1rem; text-align: center; background: rgba(231, 76, 60, 0.1); padding: 5px; border-radius: 4px; display: none; }
         
         /* Header */
         header { 
@@ -119,20 +133,45 @@
 </head>
 <body>
 
-    <header>
-        <div class="logo">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            CryptoMirato
+    <!-- AUTH OVERLAY -->
+    <div id="authOverlay" class="auth-overlay">
+        <div class="auth-box">
+            <div style="display:flex; justify-content:center; align-items:center; margin-bottom:0.5rem; color:var(--accent-blue);">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <h1>CryptoMirato</h1>
+            <p class="text-center" style="color:var(--text-secondary); margin-bottom:1.5rem; font-size:0.85rem;">Algorithmic Trading Advisor</p>
+            
+            <div id="authError" class="auth-error"></div>
+            
+            <input type="email" id="email" class="form-input" placeholder="Il tuo indirizzo email" required>
+            <input type="password" id="password" class="form-input" placeholder="La tua password sicura" required>
+            
+            <button class="btn-auth" id="btnLogin" onclick="login()">Accedi alla Dashboard</button>
+            <button class="btn-auth" id="btnRegister" style="background:var(--bg-secondary); color:white; border:1px solid var(--border);" onclick="register()">Crea un Account Gratuito</button>
         </div>
-        <div class="header-stats" id="globalStats">
-            <span>Caricamento dati...</span>
-        </div>
-        <div>
-            <button onclick="document.getElementById('infoModal').classList.add('active')" style="background:transparent; border:1px solid var(--accent-blue); color:var(--text-primary); padding:0.5rem 1rem; border-radius:6px; cursor:pointer; display:flex; gap:0.5rem; align-items:center;">
-                Guida & Disclaimer <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
-            </button>
-        </div>
-    </header>
+    </div>
+
+    <!-- MAIN APP CONTENITORI ESISTENTI HIDDEN -->
+    <div id="mainApp" class="hidden">
+        <header>
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                CryptoMirato
+            </div>
+            <div class="header-stats" id="globalStats">
+                <span>Caricamento dati...</span>
+            </div>
+            <div style="display:flex; align-items:center; gap: 1rem;">
+                <!-- Zona Info Utente loggato -->
+                <div id="userBadge" style="font-size:0.85rem; color:var(--text-secondary); display:flex; align-items:center; gap:0.5rem;">
+                    <!-- Badge generato via js -->
+                </div>
+                
+                <button onclick="document.getElementById('infoModal').classList.add('active')" style="background:transparent; border:1px solid rgba(255,255,255,0.1); color:var(--text-secondary); padding:0.4rem 0.8rem; border-radius:6px; cursor:pointer; font-size:0.85rem;">Guida</button>
+                <button class="btn-logout" onclick="logout()">Esci</button>
+            </div>
+        </header>
 
     <!-- Modale Guida -->
     <div id="infoModal" class="modal-overlay">
@@ -250,13 +289,99 @@
         let cryptoData = [];
         let metadata = {};
         
-        // --- GESTIONE PORTAFOGLIO IN LOCALSTORAGE ---
-        const PORTFOLIO_KEY = 'cryptomirato_portfolio';
-        let portfolio = JSON.parse(localStorage.getItem(PORTFOLIO_KEY)) || {};
+        // --- INIZIALIZZAZIONE E AUTH LOGIC ---
+        let portfolio = {};
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            initSupabase();
+            const sessione = await sbGetSession();
+            
+            if (sessione) {
+                // Utente Loggato
+                mostraApp(currentUser);
+            } else {
+                // Utente Non Loggato, resta su authOverlay
+                document.getElementById('authOverlay').classList.remove('hidden');
+            }
+        });
+
+        // Login Logic
+        async function login() {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            const errDiv = document.getElementById('authError');
+            errDiv.style.display = 'none';
+
+            if (!email || !pass) { errDiv.innerText = "Inserisci email e password"; errDiv.style.display = 'block'; return; }
+
+            const btn = document.getElementById('btnLogin');
+            btn.innerText = "Accesso in corso..."; btn.disabled = true;
+
+            try {
+                const data = await sbSignIn(email, pass);
+                mostraApp(data.user);
+            } catch(e) {
+                errDiv.innerText = e.message; errDiv.style.display = 'block';
+            } finally {
+                btn.innerText = "Accedi alla Dashboard"; btn.disabled = false;
+            }
+        }
+
+        // Register Logic
+        async function register() {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            const errDiv = document.getElementById('authError');
+            errDiv.style.display = 'none';
+
+            if (!email || !pass) { errDiv.innerText = "Inserisci email e password"; errDiv.style.display = 'block'; return; }
+
+            const btn = document.getElementById('btnRegister');
+            btn.innerText = "Registrazione..."; btn.disabled = true;
+
+            try {
+                await sbSignUp(email, pass);
+                errDiv.innerText = "Ti abbiamo inviato una mail di conferma! Clicca il link per poter accedere.";
+                errDiv.style.color = "var(--accent-green)"; errDiv.style.background = "rgba(46, 204, 113, 0.1)";
+                errDiv.style.display = 'block';
+            } catch(e) {
+                errDiv.style.color = "var(--accent-red)"; errDiv.style.background = "rgba(231, 76, 60, 0.1)";
+                errDiv.innerText = e.message; errDiv.style.display = 'block';
+            } finally {
+                btn.innerText = "Crea un Account Gratuito"; btn.disabled = false;
+            }
+        }
+
+        async function logout() {
+            await sbSignOut();
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('authOverlay').classList.remove('hidden');
+        }
+
+        async function mostraApp(user) {
+            document.getElementById('authOverlay').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            // Imposta Username e Badge Admin
+            const badgeBox = document.getElementById('userBadge');
+            if (isSuperAdmin()) {
+                badgeBox.innerHTML = `<span><strong style="color:var(--accent-yellow)">👑 FOUNDER</strong> | ${user.email}</span>`;
+            } else {
+                badgeBox.innerHTML = `<span>👤 ${user.email}</span>`;
+            }
+
+            // Carica Portafoglio Privato
+            const P_KEY = getUserPortfolioKey();
+            portfolio = JSON.parse(localStorage.getItem(P_KEY)) || {};
+            
+            // Avvia fetch dati scanner
+            await fetchDati();
+        }
 
         function savePortfolio() {
-            localStorage.setItem(PORTFOLIO_KEY, JSON.stringify(portfolio));
-            renderDashboard(); // Ridisegna con lo stato aggiornato
+            const P_KEY = getUserPortfolioKey();
+            localStorage.setItem(P_KEY, JSON.stringify(portfolio));
+            renderDashboard(); 
         }
 
         let pendingBuy = null;
@@ -306,9 +431,7 @@
             pendingSell = null;
         });
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            await fetchDati();
-        });
+        // (Inizializzazione rimossa, ora lanciamo fetchDati da mostraApp)
 
         async function fetchDati() {
             try {
@@ -498,11 +621,17 @@
                 finalColTarget.appendChild(card);
             });
             
+            // SUPER ADMIN LOGIC: mostriamo alcuni dati extra se necessario (es. total portfolio value)
+            if (isSuperAdmin()) {
+                // Potremmo ad esempio mostrare statistiche generali non visibili agli altri qui.
+            }
+            
             // Messaggi fallback se vuote
             if(colOrd.COMPRA.children.length === 0) colOrd.COMPRA.innerHTML = `<div class="card text-center text-secondary">Nessuna opportunità d'acquisto rilevata.</div>`;
             if(colOrd.VENDI.children.length === 0) colOrd.VENDI.innerHTML = `<div class="card text-center text-secondary">Nessun pericolo di svendita rilevato.</div>`;
             if(colOrd.ATTENDI.children.length === 0) colOrd.ATTENDI.innerHTML = `<div class="card text-center text-secondary">Nessuna moneta in stallo.</div>`;
         }
     </script>
+</div> <!-- Chiude mainApp -->
 </body>
 </html>
