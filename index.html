@@ -149,7 +149,7 @@
             <div id="authError" class="auth-error"></div>
             
             <input type="email" id="email" class="form-input" placeholder="Email" required>
-            <input type="password" id="password" class="form-input" placeholder="Password" required>
+            <input type="password" id="password" class="form-input" placeholder="Password" required onkeypress="if(event.key === 'Enter') login()">
             
             <button class="btn-auth" id="btnLogin" onclick="login()">Accedi</button>
             
