@@ -49,6 +49,9 @@
         .btn-logout:hover { background: rgba(231, 76, 60, 0.1); color: white; }
         .auth-error { color: var(--accent-red); font-size: 0.85rem; margin-bottom: 1rem; text-align: center; background: rgba(231, 76, 60, 0.1); padding: 5px; border-radius: 4px; display: none; }
         
+        .btn-admin { background: var(--accent-yellow); color: black; font-weight: bold; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; display: none; }
+        #adminPanel { border: 2px solid var(--accent-yellow); background: rgba(241, 196, 15, 0.05); margin-bottom: 2rem; padding: 1.5rem; border-radius: 12px; display: none; }
+
         /* Header */
         header { 
             position: sticky; top: 0; z-index: 100;
@@ -133,22 +136,29 @@
 </head>
 <body>
 
-    <!-- AUTH OVERLAY -->
-    <div id="authOverlay" class="auth-overlay">
+    <!-- AUTH OVERLAY ALLINEATO A BETMIRATO -->
+    <div id="authOverlay" class="auth-overlay hidden">
         <div class="auth-box">
-            <div style="display:flex; justify-content:center; align-items:center; margin-bottom:0.5rem; color:var(--accent-blue);">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <div style="display:flex; justify-content:center; align-items:center; margin-bottom:1.5rem;">
+                <h1>CryptoMirato</h1>
+                <svg onclick="document.getElementById('infoModal').classList.add('active')" style="width:20px; height:20px; margin-left:10px; cursor:pointer; fill:var(--accent-blue);" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
             </div>
-            <h1>CryptoMirato</h1>
-            <p class="text-center" style="color:var(--text-secondary); margin-bottom:1.5rem; font-size:0.85rem;">Algorithmic Trading Advisor</p>
+            
+            <p class="text-center" style="color:var(--text-secondary); margin-bottom:1.5rem; font-size:0.9rem;">Algorithmic Trading Advisor</p>
             
             <div id="authError" class="auth-error"></div>
             
-            <input type="email" id="email" class="form-input" placeholder="Il tuo indirizzo email" required>
-            <input type="password" id="password" class="form-input" placeholder="La tua password sicura" required>
+            <input type="email" id="email" class="form-input" placeholder="Email" required>
+            <input type="password" id="password" class="form-input" placeholder="Password" required>
             
-            <button class="btn-auth" id="btnLogin" onclick="login()">Accedi alla Dashboard</button>
-            <button class="btn-auth" id="btnRegister" style="background:var(--bg-secondary); color:white; border:1px solid var(--border);" onclick="register()">Crea un Account Gratuito</button>
+            <button class="btn-auth" id="btnLogin" onclick="login()">Accedi</button>
+            
+            <p class="text-center" style="margin-top:0.5rem; margin-bottom:1rem; font-size:0.85rem;">
+                Non hai un account? <a href="#" onclick="register()" style="color:var(--accent-green); outline:none;">Registrati</a>
+            </p>
+            
+            <button class="btn-auth" style="background:var(--accent-blue);color:white;" onclick="guestLogin()">Continua come Ospite (Demo)</button>
+            <p style="font-size:0.75rem; color:var(--text-secondary); text-align:center; margin-top:1rem;">N.B. L'app non elabora pronostici garantiti, ma analizza l'RSI e la forza dei trend.</p>
         </div>
     </div>
 
@@ -156,19 +166,19 @@
     <div id="mainApp" class="hidden">
         <header>
             <div class="logo">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                 CryptoMirato
+                <svg onclick="document.getElementById('infoModal').classList.add('active')" style="width:22px; height:22px; cursor:pointer; fill:var(--accent-blue); transition:transform 0.2s; margin-left:8px; margin-top:2px;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" viewBox="0 0 24 24"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
             </div>
             <div class="header-stats" id="globalStats">
                 <span>Caricamento dati...</span>
             </div>
-            <div style="display:flex; align-items:center; gap: 1rem;">
+            <div style="display:flex; align-items:center;">
                 <!-- Zona Info Utente loggato -->
-                <div id="userBadge" style="font-size:0.85rem; color:var(--text-secondary); display:flex; align-items:center; gap:0.5rem;">
+                <div id="userBadge" style="margin-right:1rem; font-size:0.9rem;">
                     <!-- Badge generato via js -->
                 </div>
                 
-                <button onclick="document.getElementById('infoModal').classList.add('active')" style="background:transparent; border:1px solid rgba(255,255,255,0.1); color:var(--text-secondary); padding:0.4rem 0.8rem; border-radius:6px; cursor:pointer; font-size:0.85rem;">Guida</button>
+                <button id="btnAdmin" class="btn-admin" style="margin-right:1rem;" onclick="toggleAdminPanel()">👑 Admin Panel</button>
                 <button class="btn-logout" onclick="logout()">Esci</button>
             </div>
         </header>
@@ -323,7 +333,7 @@
             } catch(e) {
                 errDiv.innerText = e.message; errDiv.style.display = 'block';
             } finally {
-                btn.innerText = "Accedi alla Dashboard"; btn.disabled = false;
+                btn.innerText = "Accedi"; btn.disabled = false;
             }
         }
 
@@ -334,9 +344,9 @@
             const errDiv = document.getElementById('authError');
             errDiv.style.display = 'none';
 
-            if (!email || !pass) { errDiv.innerText = "Inserisci email e password"; errDiv.style.display = 'block'; return; }
+            if (!email || !pass) { errDiv.innerText = "Inserisci email e password nei campi per registrarti"; errDiv.style.display = 'block'; return; }
 
-            const btn = document.getElementById('btnRegister');
+            const btn = document.getElementById('btnLogin'); // Usiamo il btn login momentaneamente
             btn.innerText = "Registrazione..."; btn.disabled = true;
 
             try {
@@ -348,8 +358,15 @@
                 errDiv.style.color = "var(--accent-red)"; errDiv.style.background = "rgba(231, 76, 60, 0.1)";
                 errDiv.innerText = e.message; errDiv.style.display = 'block';
             } finally {
-                btn.innerText = "Crea un Account Gratuito"; btn.disabled = false;
+                btn.innerText = "Accedi"; btn.disabled = false;
             }
+        }
+        
+        // Modalità Ospite
+        function guestLogin() {
+            const guestUser = { id: 'guest123', email: 'Guest (Demo Modalità Locale)' };
+            currentUser = guestUser;
+            mostraApp(guestUser, true);
         }
 
         async function logout() {
@@ -358,16 +375,25 @@
             document.getElementById('authOverlay').classList.remove('hidden');
         }
 
-        async function mostraApp(user) {
+        async function mostraApp(user, isGuest = false) {
             document.getElementById('authOverlay').classList.add('hidden');
             document.getElementById('mainApp').classList.remove('hidden');
             
             // Imposta Username e Badge Admin
             const badgeBox = document.getElementById('userBadge');
-            if (isSuperAdmin()) {
-                badgeBox.innerHTML = `<span><strong style="color:var(--accent-yellow)">👑 FOUNDER</strong> | ${user.email}</span>`;
+            const btnAdmin = document.getElementById('btnAdmin');
+            
+            if (isGuest) {
+                badgeBox.innerHTML = `<span>👤 Opsite (Demo)</span>`;
+                btnAdmin.style.display = 'none';
+            } else if (isSuperAdmin()) {
+                badgeBox.innerHTML = `<span>👤 ${user.email}</span>`; // Stile BetMirato
+                btnAdmin.style.display = 'inline-block';
+                // Simulazione fetch utenti admin
+                setTimeout(() => { document.getElementById('adminTotalUsers').innerText = Math.floor(Math.random() * (120 - 40) + 40); }, 500);
             } else {
                 badgeBox.innerHTML = `<span>👤 ${user.email}</span>`;
+                btnAdmin.style.display = 'none';
             }
 
             // Carica Portafoglio Privato
@@ -376,6 +402,11 @@
             
             // Avvia fetch dati scanner
             await fetchDati();
+        }
+        
+        function toggleAdminPanel() {
+            const p = document.getElementById('adminPanel');
+            p.style.display = (p.style.display === 'none' || p.style.display === '') ? 'block' : 'none';
         }
 
         function savePortfolio() {
@@ -615,6 +646,11 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <div style="text-align:center; font-size:0.75rem; color:var(--text-secondary); background:rgba(255,255,255,0.03); padding:6px; border-radius:6px; margin-top:0.8rem; border:1px dashed var(--border);">
+                         🏦 Acquistabile su: <strong>Nexo</strong> / <strong>Binance</strong>
+                    </div>
+                    
                     ${actionBtnHTML}
                 `;
                 

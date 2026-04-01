@@ -3,7 +3,7 @@ const SUPABASE_URL = 'https://kvwomwmnfrfohewadesg.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2d29td21uZnJmb2hld2FkZXNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODM1MDAsImV4cCI6MjA5MDI1OTUwMH0.26BXmGc3HMAmUO47FOYSk6EM6_t4j2qViLyoi1W8_S8';
 
 // Lista email che godranno dei privilegi di Super Admin
-const SUPER_ADMINS = ['admin@danitech.it', 'mrdasp@gmail.com']; // Sostituisci con la tua email reale
+const SUPER_ADMINS = ['admin@danitech.it', 'mrdasp@gmail.com', 'dani3d.drone@gmail.com']; 
 
 let sbClient;
 let currentUser = null;
