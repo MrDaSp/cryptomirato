@@ -18,8 +18,16 @@ HEADERS = {'x-cg-demo-api-key': COINGECKO_API_KEY}
 
 # Per rispettare il Rate Limit del piano gratuito (30 chiamate/minuto):
 # 1 chiamata per i mercati + N chiamate storiche
-# Manteniamo N=15 per essere sicuri ed evitare "Too Many Requests" (HTTP 429)
-TOP_N_COINS = 15 
+# Preleviamo più monete dai mercati (es. 40) per filtrare le stablecoin, ma ne analizziamo max 15
+TOP_N_MARKETS = 40
+MAX_ANALISI = 15 
+
+# Monete da IGNORARE (Stablecoin, Token di specifici Exchange o Wrapped tokens non sempre tradabili)
+IGNORE_SYMBOLS = [
+    'USDT', 'USDC', 'USDS', 'DAI', 'FDUSD', 'USDD', 'TUSD', 'BUSD', 'USDE', # Stablecoins
+    'STETH', 'WETH', 'WBTC', 'RETH', 'CBETH', # Wrapped/Staked
+    'WBT', 'LEO', 'OKB', 'GT', 'HT', 'KCS' # Exchange tokens (Spesso non su Nexo/Binance base)
+]
 
 # Fee di Binance ipotizzate
 FEE_TAKER = 0.001   # 0.1% fee acquisto
@@ -130,15 +138,15 @@ def fetch_data():
     print("--- CryptoMirato Scanner in esecuzione ---")
     print("=" * 60)
     
-    # 1. Ottieni le top 15 Coin via /coins/markets
-    print(f"[1/3] Scaricamento mercati delle Top {TOP_N_COINS} Crypto...")
+    # 1. Ottieni le top Crypto via /coins/markets
+    print(f"[1/3] Scaricamento mercati delle Top {TOP_N_MARKETS} Crypto...")
     url_markets = "https://api.coingecko.com/api/v3/coins/markets"
     params_markets = {
         'vs_currency': 'eur',
         'order': 'market_cap_desc',
-        'per_page': TOP_N_COINS,
+        'per_page': TOP_N_MARKETS,
         'page': 1,
-        'sparkline': False, # Non usiamo lo sparkline grezzo, calcoliamo RSI
+        'sparkline': False,
         'price_change_percentage': '1h,24h,7d'
     }
     
@@ -148,13 +156,20 @@ def fetch_data():
         return
         
     top_coins = res.json()
-    print(f"Trovate {len(top_coins)} monete.")
+    
+    # Filtriamo le monete inutili per il trading (Stablecoins, WBT ecc.)
+    monete_valide = [c for c in top_coins if c['symbol'].upper() not in IGNORE_SYMBOLS]
+    
+    # Prendiamo solo le prime N monete valide
+    monete_valide = monete_valide[:MAX_ANALISI]
+    
+    print(f"Trovate {len(top_coins)} monete, di cui {len(monete_valide)} scambiabili (escluse stablecoin).")
     
     risultati = []
     
     # 2. Ottieni lo storico per il calcolo RSI
     print(f"\n[2/3] Analisi tecnica e calcolo RSI...")
-    for i, coin in enumerate(top_coins):
+    for i, coin in enumerate(monete_valide):
         coin_id = coin['id']
         symbol = coin['symbol'].upper()
         current_price = coin['current_price']
