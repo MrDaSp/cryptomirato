@@ -232,6 +232,36 @@
             </div>
         </div>
 
+        <!-- PORTAFOGLIO / BANKROLL -->
+        <div id="bankrollBox" class="card hidden" style="margin-bottom: 2rem; border-color: var(--accent-blue);">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:1rem; margin-bottom:1rem;">
+                <h2 style="color:var(--accent-blue); margin:0;">💼 Il tuo Portafoglio Asset</h2>
+                <div style="text-align:right;">
+                    <div style="font-size:0.8rem; color:var(--text-secondary);">P&L Totale Netto</div>
+                    <div id="bkTotalPnL" style="font-family:'JetBrains Mono', monospace; font-size:1.5rem; font-weight:900;">€ 0.00</div>
+                </div>
+            </div>
+            
+            <div class="grid-3" style="margin-bottom:1.5rem;">
+                <div style="background:var(--bg-secondary); padding:1rem; border-radius:8px;">
+                    <div style="font-size:0.8rem; color:var(--text-secondary);">Capitale Investito</div>
+                    <div id="bkInvested" style="font-family:'JetBrains Mono', monospace; font-size:1.2rem; color:white; font-weight:bold;">€ 0.00</div>
+                </div>
+                <div style="background:var(--bg-secondary); padding:1rem; border-radius:8px;">
+                    <div style="font-size:0.8rem; color:var(--text-secondary);">Valore Attuale Stimato</div>
+                    <div id="bkCurrentValue" style="font-family:'JetBrains Mono', monospace; font-size:1.2rem; color:white; font-weight:bold;">€ 0.00</div>
+                </div>
+                <div style="background:var(--bg-secondary); padding:1rem; border-radius:8px;">
+                    <div style="font-size:0.8rem; color:var(--text-secondary);">Posizioni Aperte</div>
+                    <div id="bkOpenCount" style="font-family:'JetBrains Mono', monospace; font-size:1.2rem; color:white; font-weight:bold;">0</div>
+                </div>
+            </div>
+            
+            <div id="bkPositionsList" style="display:flex; flex-direction:column; gap:0.5rem; max-height:300px; overflow-y:auto; padding-right:5px;">
+                <!-- Righe generate via js -->
+            </div>
+        </div>
+
         <!-- Kanban Board -->
         <div class="grid-3" id="kanbanBoard">
             <!-- Opportunità -->
@@ -533,6 +563,13 @@
             
             Object.values(colOrd).forEach(col => col.innerHTML = '');
             
+            // --- VARIABILI BANKROLL ---
+            let totalInvested = 0;
+            let totalCurrentValue = 0;
+            let totalPnL = 0;
+            let openPositionsCount = 0;
+            let bkHTML = '';
+            
             // Render Cards
             filtered.forEach(c => {
                 let adv = { ...c.analisi_tecnica };
@@ -551,6 +588,35 @@
                     const grossReturn = (c.prezzo - pos.prezzoAcquisto) / pos.prezzoAcquisto;
                     realProfitPct = (grossReturn - feeImpact) * 100;
                     realProfitEur = pos.importoEur * (realProfitPct / 100);
+                    
+                    // Aggiornamento Metriche Bankroll Totale
+                    totalInvested += pos.importoEur;
+                    totalCurrentValue += (pos.importoEur + realProfitEur);
+                    totalPnL += realProfitEur;
+                    openPositionsCount++;
+                    
+                    // Aggiunta riga al box del bankroll
+                    const pnlColor = realProfitEur >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                    const pnlSign = realProfitEur >= 0 ? '+' : '';
+                    bkHTML += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary); padding:0.8rem; border-radius:6px; border:1px solid var(--border);">
+                            <div style="display:flex; align-items:center; gap:0.5rem;">
+                                <img src="${c.logo}" style="width:24px; height:24px; border-radius:50%;">
+                                <strong>${c.nome} (${c.simbolo})</strong>
+                            </div>
+                            <div style="font-size:0.85rem; color:var(--text-secondary); text-align:right;">
+                                Inv: €${formatter(pos.importoEur)} @ €${formatter(pos.prezzoAcquisto)}<br>
+                                <span style="color:white;">Attuale: €${formatter(c.prezzo)}</span>
+                            </div>
+                            <div style="text-align:right; font-family:'JetBrains Mono', monospace; font-weight:800; color:${pnlColor};">
+                                ${pnlSign}${formatter(realProfitEur)} €
+                                <div style="font-size:0.7rem;">${pnlSign}${formatter(realProfitPct)}%</div>
+                            </div>
+                            <div>
+                                <button onclick="openSellModal('${c.simbolo}', '${c.nome}', ${realProfitEur})" style="background:rgba(231,76,60,0.1); border:1px solid var(--accent-red); color:var(--accent-red); padding:0.4rem 0.6rem; border-radius:6px; cursor:pointer;" title="Vendi ora e incassa">✖</button>
+                            </div>
+                        </div>
+                    `;
                     
                     // Comportamento Consulente: se è in portafoglio sei in ATTENDI finché non scatta VENDI
                     if (c.prezzo >= adv.target_price) {
@@ -660,6 +726,23 @@
             // SUPER ADMIN LOGIC: mostriamo alcuni dati extra se necessario (es. total portfolio value)
             if (isSuperAdmin()) {
                 // Potremmo ad esempio mostrare statistiche generali non visibili agli altri qui.
+            }
+            
+            // Aggiornamento DOM per il Bankroll
+            const bkBox = document.getElementById('bankrollBox');
+            if (openPositionsCount > 0) {
+                bkBox.classList.remove('hidden');
+                document.getElementById('bkInvested').innerText = '€ ' + formatter(totalInvested);
+                document.getElementById('bkCurrentValue').innerText = '€ ' + formatter(totalCurrentValue);
+                document.getElementById('bkOpenCount').innerText = openPositionsCount;
+                
+                const pnlEl = document.getElementById('bkTotalPnL');
+                pnlEl.innerText = (totalPnL >= 0 ? '+' : '') + formatter(totalPnL, ' €');
+                pnlEl.style.color = totalPnL >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                
+                document.getElementById('bkPositionsList').innerHTML = bkHTML;
+            } else {
+                bkBox.classList.add('hidden');
             }
             
             // Messaggi fallback se vuote
