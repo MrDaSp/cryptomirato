@@ -56,10 +56,12 @@
         header { 
             position: sticky; top: 0; z-index: 100;
             padding: 1rem 2rem; background: var(--glass-bg); backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 1px solid var(--border); 
+            display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; 
         }
-        .logo { font-size: 1.5rem; font-weight: 800; color: var(--accent-blue); display: flex; align-items: center; gap: 0.5rem; }
-        .header-stats { display: flex; gap: 1rem; font-size: 0.85rem; color: var(--text-secondary); }
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--accent-green); display: flex; align-items: center; gap: 0.5rem; justify-self: start; }
+        .header-stats { display: flex; gap: 1rem; font-size: 0.85rem; color: var(--text-secondary); justify-self: center; }
+        .header-actions { display: flex; align-items: center; gap: 1rem; justify-self: end; }
         
         /* Cruscotto */
         .dashboard-header { margin: 2rem 0; text-align: center; }
@@ -172,13 +174,13 @@
             <div class="header-stats" id="globalStats">
                 <span>Caricamento dati...</span>
             </div>
-            <div style="display:flex; align-items:center;">
+            <div class="header-actions">
                 <!-- Zona Info Utente loggato -->
-                <div id="userBadge" style="margin-right:1rem; font-size:0.9rem;">
+                <div id="userBadge" style="font-size:0.9rem;">
                     <!-- Badge generato via js -->
                 </div>
                 
-                <button id="btnAdmin" class="btn-admin" style="margin-right:1rem;" onclick="toggleAdminPanel()">👑 Admin Panel</button>
+                <button id="btnAdmin" class="btn-admin" onclick="toggleAdminPanel()">👑 Admin Panel</button>
                 <button class="btn-logout" onclick="logout()">Esci</button>
             </div>
         </header>
