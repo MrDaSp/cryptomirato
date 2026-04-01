@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoMirato – Auto-Advisor & Analisi Crypto</title>
+    <meta name="description" content="Scanner automatico per criptovalute. Suggerimenti di acquisto, target price e calcolo profitto netto basato su RSI.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: #1a2235;
+            --border: #2a3550;
+            --text-primary: #e8ecf4;
+            --text-secondary: #8b98b8;
+            --accent-green: #2ecc71;
+            --accent-yellow: #f1c40f;
+            --accent-red: #e74c3c;
+            --accent-blue: #3b82f6;
+            --glass-bg: rgba(26, 34, 53, 0.7);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; line-height: 1.5; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        
+        /* Layout e Utility */
+        .container { max-width: 1300px; margin: 0 auto; padding: 0 1rem; }
+        .hidden { display: none !important; }
+        .text-center { text-align: center; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+        @media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr; } }
+        
+        /* Header */
+        header { 
+            position: sticky; top: 0; z-index: 100;
+            padding: 1rem 2rem; background: var(--glass-bg); backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; 
+        }
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--accent-blue); display: flex; align-items: center; gap: 0.5rem; }
+        .header-stats { display: flex; gap: 1rem; font-size: 0.85rem; color: var(--text-secondary); }
+        
+        /* Cruscotto */
+        .dashboard-header { margin: 2rem 0; text-align: center; }
+        .dashboard-header h1 { font-size: 2rem; margin-bottom: 0.5rem; letter-spacing: -1px; }
+        .dashboard-header p { color: var(--text-secondary); }
+        
+        /* Filtri */
+        .filters { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; background: var(--bg-card); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); }
+        .filter-group { display: flex; gap: 1rem; align-items: center; }
+        select { background: var(--bg-secondary); color: white; border: 1px solid var(--border); padding: 0.6rem; border-radius: 6px; outline: none; cursor: pointer; font-family: 'Inter', sans-serif; }
+        
+        /* Kanban Colonne */
+        .col-header { text-align: center; padding-bottom: 0.8rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; }
+        .col-verde { border-bottom: 3px solid var(--accent-green); color: var(--accent-green); }
+        .col-gialla { border-bottom: 3px solid var(--accent-yellow); color: var(--accent-yellow); }
+        .col-rossa { border-bottom: 3px solid var(--accent-red); color: var(--accent-red); }
+        
+        /* Card Crypto */
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem; transition: transform 0.2s, border-color 0.2s; position: relative; overflow: hidden; }
+        .card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.2); }
+        
+        .card.verde { border-top: 4px solid var(--accent-green); background: linear-gradient(180deg, rgba(46,204,113,0.05) 0%, var(--bg-card) 100%); }
+        .card.gialla { border-top: 4px solid var(--accent-yellow); background: linear-gradient(180deg, rgba(241,196,15,0.05) 0%, var(--bg-card) 100%); }
+        .card.rossa { border-top: 4px solid var(--accent-red); background: linear-gradient(180deg, rgba(231,76,60,0.05) 0%, var(--bg-card) 100%); }
+        
+        .crypto-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .crypto-name { display: flex; align-items: center; gap: 0.8rem; font-weight: 700; font-size: 1.1rem; }
+        .crypto-logo { width: 32px; height: 32px; border-radius: 50%; }
+        .crypto-price { font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; font-weight: 800; text-align: right; }
+        
+        .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+        .badge.rank { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); }
+        
+        .var-positive { color: var(--accent-green); }
+        .var-negative { color: var(--accent-red); }
+        
+        /* Sezione Dati Tecnici */
+        .tech-box { background: var(--bg-secondary); border-radius: 8px; padding: 0.8rem; margin: 0.8rem 0; border: 1px solid var(--border); }
+        .tech-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.4rem; color: var(--text-secondary); }
+        .tech-val { font-family: 'JetBrains Mono', monospace; color: white; font-weight: 600; }
+        
+        /* RSI Bar */
+        .rsi-container { margin-top: 0.5rem; }
+        .rsi-label { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.3rem; }
+        .rsi-bar-wrap { height: 6px; background: #333; border-radius: 3px; position: relative; overflow: hidden; }
+        .rsi-bar { height: 100%; position: absolute; left: 0; transition: width 0.5s; }
+        .rsi-marker { position: absolute; top: 0; width: 2px; height: 100%; background: white; z-index: 10; border-radius: 1px; }
+        
+        /* Consulente */
+        .advisor-box { border-radius: 8px; padding: 1rem; text-align: center; margin-top: 1rem; border: 1px dashed rgba(255,255,255,0.2); }
+        .advisor-box.COMPRA { background: rgba(46, 204, 113, 0.1); border-color: rgba(46, 204, 113, 0.3); }
+        .advisor-box.ATTENDI { background: rgba(241, 196, 15, 0.05); }
+        .advisor-box.VENDI { background: rgba(231, 76, 60, 0.1); border-color: rgba(231, 76, 60, 0.3); }
+        
+        .adv-title { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+        .adv-profit { font-family: 'JetBrains Mono', monospace; font-size: 1.4rem; font-weight: 900; margin-bottom: 0.2rem; }
+        .COMPRA .adv-profit { color: var(--accent-green); }
+        .VENDI .adv-profit { color: var(--accent-red); }
+        .ATTENDI .adv-profit { color: var(--accent-yellow); }
+        
+        .adv-targets { display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.05); }
+        
+        /* Footer */
+        footer { margin-top: 4rem; padding: 2rem; border-top: 1px solid var(--border); text-align: center; color: var(--text-secondary); font-size: 0.85rem; }
+        
+        /* Modale Info */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; padding: 1rem;}
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-box { background: var(--bg-card); width: 600px; max-width: 100%; padding: 2rem; border-radius: 12px; border: 1px solid var(--border); position: relative; transform: translateY(20px); transition: transform 0.3s; max-height: 90vh; overflow-y: auto;}
+        .modal-overlay.active .modal-box { transform: translateY(0); }
+        .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer; }
+        .modal-close:hover { color: white; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            CryptoMirato
+        </div>
+        <div class="header-stats" id="globalStats">
+            <span>Caricamento dati...</span>
+        </div>
+        <div>
+            <button onclick="document.getElementById('infoModal').classList.add('active')" style="background:transparent; border:1px solid var(--accent-blue); color:var(--text-primary); padding:0.5rem 1rem; border-radius:6px; cursor:pointer; display:flex; gap:0.5rem; align-items:center;">
+                Guida & Disclaimer <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Modale Guida -->
+    <div id="infoModal" class="modal-overlay">
+        <div class="modal-box">
+            <button class="modal-close" onclick="document.getElementById('infoModal').classList.remove('active')">&times;</button>
+            <h2 style="color:var(--accent-blue); margin-bottom:1rem; text-align:center;">🧠 Come funziona CryptoMirato?</h2>
+            
+            <p style="margin-bottom:1rem; color:var(--text-secondary);">Questo cruscotto funge da consulente automatico, scansionando in tempo reale le top criptovalute mondiali alla ricerca di anomalie di prezzo.</p>
+            
+            <div style="background:var(--bg-secondary); padding:1rem; border-radius:8px; margin-bottom:1rem;">
+                <h4 style="color:white; margin-bottom:0.5rem;">Cosa analizza?</h4>
+                <ul style="margin-left:1.5rem; font-size:0.9rem; color:var(--text-secondary); line-height:1.6;">
+                    <li><strong>RSI (Relative Strength Index)</strong>: Indica se una moneta è venduta troppo aggressivamente (ipervenduto < 35, da comprare) o comprata troppo e rischia un crollo (ipercomprato > 70, da vendere).</li>
+                    <li><strong>Volatilità (Rischio)</strong>: L'impostazione dei target varia in base al ranking della moneta. Meno capitalizzata = più volatile.</li>
+                    <li><strong>Calcolo Fee</strong>: Quando ti suggeriamo un profitto potenziale, abbiamo già scalato uno standard dello 0.2% per simulare le vere commissioni degli exchange (es. Binance).</li>
+                </ul>
+            </div>
+            
+            <div style="background:rgba(231, 76, 60, 0.1); border: 1px solid var(--accent-red); padding:1rem; border-radius:8px; text-align:center;">
+                <h4 style="color:var(--accent-red); margin-bottom:0.5rem;">⚠️ Disclaimer Fiscale e Finanziario</h4>
+                <p style="font-size:0.8rem; line-height:1.5;">CryptoMirato è un'applicazione puramente informativa basata su modelli statistici. I "Segnali" generati non sono consigli finanziari, ma output matematici. L'utente ha la responsabilità assoluta sui propri capitali e sulle proprie perdite.</p>
+            </div>
+        </div>
+    </div>
+
+    <main class="container">
+        <div class="dashboard-header">
+            <h1>Cruscotto Analitico Criptovalute</h1>
+            <p id="lastUpdateSpan">Sincronizzazione API in corso...</p>
+        </div>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label style="font-size:0.85rem; color:var(--text-secondary);">Visualizza:</label>
+                <select id="filterMode" onchange="renderDashboard()">
+                    <option value="all">Tutte le Monete</option>
+                    <option value="compra">Solo Segnali COMPRA 🟢</option>
+                    <option value="vendi">Solo Segnali VENDI 🔴</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label style="font-size:0.85rem; color:var(--text-secondary);">Ordina per:</label>
+                <select id="sortMode" onchange="renderDashboard()">
+                    <option value="profit">Profitto Stimato (Decrescente)</option>
+                    <option value="rsi_asc">RSI (Crescente - Ipervenduto)</option>
+                    <option value="rank">Market Cap Rank</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Kanban Board -->
+        <div class="grid-3" id="kanbanBoard">
+            <!-- Opportunità -->
+            <div>
+                <h3 class="col-header col-verde">🟢 Opportunità (Compra)</h3>
+                <div id="colCompra"></div>
+            </div>
+            
+            <!-- Neutro -->
+            <div>
+                <h3 class="col-header col-gialla">🟡 Neutrale (Attendi)</h3>
+                <div id="colAttendi"></div>
+            </div>
+            
+            <!-- Pericolo -->
+            <div>
+                <h3 class="col-header col-rossa">🔴 Pericolo (Vendi / Short)</h3>
+                <div id="colVendi"></div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>CryptoMirato &copy; 2026. Motore algoritmico alimentato da CoinGecko Free API.</p>
+        <p style="font-size:0.75rem; margin-top:0.5rem; opacity:0.6;">I profitti indicati includono una stima dello 0.2% per le transazioni di exchange.</p>
+    </footer>
+
+    <!-- Modale Acquisto -->
+    <div id="buyModal" class="modal-overlay">
+        <div class="modal-box" style="max-width:400px; text-align:center;">
+            <h3 style="color:var(--accent-green); margin-bottom:1rem;">Conferma Acquisto</h3>
+            <p style="margin-bottom:1rem; color:var(--text-secondary);">Stai simulando l'acquisto di <strong id="buyCoinName" style="color:white"></strong> a <strong id="buyCoinPrice" style="color:white"></strong>.</p>
+            
+            <div style="margin-bottom:1.5rem;">
+                <label style="display:block; margin-bottom:0.5rem; font-size:0.85rem; color:var(--text-secondary);">Quantità in Euro (€):</label>
+                <input type="number" id="buyAmount" value="100" min="10" step="10" style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid var(--border); background:var(--bg-secondary); color:white; font-family:'JetBrains Mono', monospace; font-size:1.2rem; text-align:center;">
+            </div>
+            
+            <div style="display:flex; gap:1rem; justify-content:center;">
+                <button onclick="document.getElementById('buyModal').classList.remove('active')" style="padding:0.8rem 1.5rem; border-radius:8px; border:1px solid var(--border); background:transparent; color:white; cursor:pointer;">Annulla</button>
+                <button id="confirmBuyBtn" style="padding:0.8rem 1.5rem; border-radius:8px; border:none; background:var(--accent-green); color:#000; font-weight:bold; cursor:pointer;">Acquista Ora</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modale Vendita -->
+    <div id="sellModal" class="modal-overlay">
+        <div class="modal-box" style="max-width:400px; text-align:center;">
+            <h3 style="color:var(--accent-red); margin-bottom:1rem;">Chiudi Posizione</h3>
+            <p style="margin-bottom:1rem; color:var(--text-secondary);">Vuoi vendere <strong id="sellCoinName" style="color:white"></strong> e chiudere la tua operazione?</p>
+            
+            <div style="margin-bottom:1.5rem; background:var(--bg-secondary); padding:1rem; border-radius:8px;">
+                <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.3rem;">Ritorno Netto Stimato:</div>
+                <div id="sellPnL" style="font-family:'JetBrains Mono', monospace; font-size:1.4rem; font-weight:bold;"></div>
+            </div>
+            
+            <div style="display:flex; gap:1rem; justify-content:center;">
+                <button onclick="document.getElementById('sellModal').classList.remove('active')" style="padding:0.8rem 1.5rem; border-radius:8px; border:1px solid var(--border); background:transparent; color:white; cursor:pointer;">Annulla</button>
+                <button id="confirmSellBtn" style="padding:0.8rem 1.5rem; border-radius:8px; border:none; background:var(--accent-red); color:white; font-weight:bold; cursor:pointer;">Conferma Vendita</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cryptoData = [];
+        let metadata = {};
+        
+        // --- GESTIONE PORTAFOGLIO IN LOCALSTORAGE ---
+        const PORTFOLIO_KEY = 'cryptomirato_portfolio';
+        let portfolio = JSON.parse(localStorage.getItem(PORTFOLIO_KEY)) || {};
+
+        function savePortfolio() {
+            localStorage.setItem(PORTFOLIO_KEY, JSON.stringify(portfolio));
+            renderDashboard(); // Ridisegna con lo stato aggiornato
+        }
+
+        let pendingBuy = null;
+        let pendingSell = null;
+
+        function openBuyModal(simbolo, nome, prezzo) {
+            pendingBuy = { simbolo, prezzo };
+            document.getElementById('buyCoinName').innerText = nome + ` (${simbolo})`;
+            document.getElementById('buyCoinPrice').innerText = '€ ' + formatter(prezzo);
+            document.getElementById('buyAmount').value = 100;
+            document.getElementById('buyModal').classList.add('active');
+        }
+
+        document.getElementById('confirmBuyBtn').addEventListener('click', () => {
+            if (!pendingBuy) return;
+            const amount = parseFloat(document.getElementById('buyAmount').value) || 0;
+            if (amount <= 0) return alert("Inserisci un importo valido");
+            
+            // Salva nel portafoglio
+            portfolio[pendingBuy.simbolo] = {
+                prezzoAcquisto: pendingBuy.prezzo,
+                importoEur: amount,
+                data: new Date().toISOString()
+            };
+            
+            savePortfolio();
+            document.getElementById('buyModal').classList.remove('active');
+            pendingBuy = null;
+        });
+
+        function openSellModal(simbolo, nome, profittoEur) {
+            pendingSell = simbolo;
+            document.getElementById('sellCoinName').innerText = nome + ` (${simbolo})`;
+            
+            const pnlEl = document.getElementById('sellPnL');
+            pnlEl.innerText = (profittoEur >= 0 ? '+' : '') + formatter(profittoEur, ' €');
+            pnlEl.style.color = profittoEur >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+            
+            document.getElementById('sellModal').classList.add('active');
+        }
+
+        document.getElementById('confirmSellBtn').addEventListener('click', () => {
+            if (!pendingSell) return;
+            delete portfolio[pendingSell]; // Rimuovi dal portafoglio
+            savePortfolio();
+            document.getElementById('sellModal').classList.remove('active');
+            pendingSell = null;
+        });
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await fetchDati();
+        });
+
+        async function fetchDati() {
+            try {
+                // Per eludere cache rigorosa dei file JSON statici
+                const response = await fetch('crypto_data.json?t=' + Date.now());
+                if (!response.ok) throw new Error("Dati non trovati, lanciare lo scanner.py");
+                
+                const data = await response.json();
+                cryptoData = data.crypto;
+                metadata = {
+                    ultimo_aggiornamento: data.ultimo_aggiornamento,
+                    fonti: data.fonti,
+                    riepilogo: data.riepilogo
+                };
+                
+                // Aggiorna UI Headers
+                document.getElementById('lastUpdateSpan').innerHTML = `Ultimo Scan: <strong>${metadata.ultimo_aggiornamento}</strong> – Dati tramite ${metadata.fonti}`;
+                document.getElementById('globalStats').innerHTML = `
+                    <span style="color:var(--accent-green)">🟢 ${metadata.riepilogo.segnali_compra} Acquisti</span>
+                    <span style="color:var(--accent-yellow)">🟡 ${metadata.riepilogo.segnali_attendi} Hold</span>
+                    <span style="color:var(--accent-red)">🔴 ${metadata.riepilogo.segnali_vendi} Vendite</span>
+                `;
+                
+                renderDashboard();
+                
+            } catch(e) {
+                console.error(e);
+                document.getElementById('lastUpdateSpan').innerHTML = `<span style="color:var(--accent-red)">Errore caricamento dati: ${e.message}</span>`;
+            }
+        }
+
+        function formatter(num, suffix = '') {
+            if (num === null || num === undefined) return 'N/D';
+            const absl = Math.abs(num);
+            if (absl >= 1000) {
+                return num.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix;
+            }
+            // Se molto piccolo usa più cifre decimali (utile per le crypto tipo DOGE)
+            let digits = absl < 0.1 ? 4 : 2;
+            return parseFloat(num).toLocaleString('it-IT', { minimumFractionDigits: digits, maximumFractionDigits: digits }) + suffix;
+        }
+
+        function renderDashboard() {
+            const filterMode = document.getElementById('filterMode').value;
+            const sortMode = document.getElementById('sortMode').value;
+            
+            let filtered = [...cryptoData];
+            
+            // Filtro Segnale
+            if (filterMode === 'compra') filtered = filtered.filter(c => c.analisi_tecnica.segnale === 'COMPRA');
+            if (filterMode === 'vendi') filtered = filtered.filter(c => c.analisi_tecnica.segnale === 'VENDI');
+            
+            // Ordinamento
+            if (sortMode === 'profit') {
+                filtered.sort((a, b) => b.analisi_tecnica.profitto_netto_stimato_pct - a.analisi_tecnica.profitto_netto_stimato_pct);
+            } else if (sortMode === 'rsi_asc') {
+                filtered.sort((a, b) => a.rsi_14d - b.rsi_14d);
+            } else if (sortMode === 'rank') {
+                filtered.sort((a, b) => a.rank - b.rank);
+            }
+            
+            // Svuota colonne
+            const colOrd = {
+                COMPRA: document.getElementById('colCompra'),
+                ATTENDI: document.getElementById('colAttendi'),
+                VENDI: document.getElementById('colVendi')
+            };
+            
+            Object.values(colOrd).forEach(col => col.innerHTML = '');
+            
+            // Render Cards
+            filtered.forEach(c => {
+                let adv = { ...c.analisi_tecnica };
+                let renderSemaforo = adv.semaforo;
+                let renderSegnale = adv.segnale;
+                let isInPortfolio = !!portfolio[c.simbolo];
+                let realProfitPct = 0;
+                let realProfitEur = 0;
+                let statusMessage = "Consiglio Algoritmico Standard";
+                
+                // Se la moneta è in portafoglio, SOVRASCRIVIAMO il comportamento!
+                if (isInPortfolio) {
+                    const pos = portfolio[c.simbolo];
+                    // Calcolo profitto reale (sottraendo fee stimate Binance 0.2%)
+                    const feeImpact = 0.002; 
+                    const grossReturn = (c.prezzo - pos.prezzoAcquisto) / pos.prezzoAcquisto;
+                    realProfitPct = (grossReturn - feeImpact) * 100;
+                    realProfitEur = pos.importoEur * (realProfitPct / 100);
+                    
+                    // Comportamento Consulente: se è in portafoglio sei in ATTENDI finché non scatta VENDI
+                    if (c.prezzo >= adv.target_price) {
+                        // Abbiamo colpito il TARGET
+                        renderSegnale = "VENDI IN PROFITTO";
+                        renderSemaforo = "verde"; // Il semaforo è verde perché è positivo vendere ora
+                        statusMessage = "🎯 Target raggiunto! Vendi per incassare.";
+                    } else if (c.prezzo <= adv.stop_loss) {
+                        // Abbiamo colpito lo STOP LOSS
+                        renderSegnale = "VENDI (STOP LOSS)";
+                        renderSemaforo = "rossa"; 
+                        statusMessage = "🛑 Stop loss raggiunto! Vendi per limitare i danni.";
+                    } else {
+                        // Siamo nel mezzo, devi HOLD (Attendi)
+                        renderSegnale = "ATTENDI (IN PORTAFOGLIO)";
+                        renderSemaforo = "gialla";
+                        statusMessage = `Hai acquistato a €${formatter(pos.prezzoAcquisto)}. Rimani in Hold.`;
+                    }
+                }
+                
+                const colTarget = colOrd[isInPortfolio ? 'ATTENDI' : adv.segnale]; // Se in portafoglio, si sposta in ATTENDI (salvo vendita)
+                // Se devi vendere perché hai colpito target/stop, spostiamo in PERICOLO (o VENDI) o teniamo in base logica.
+                // Logica visuale: se lo status è un VENDI, spostiamo sulla colonna Vendi
+                const finalColTarget = renderSegnale.includes('VENDI') ? colOrd['VENDI'] : (isInPortfolio ? colOrd['ATTENDI'] : colOrd[adv.segnale]);
+
+                // Formattazione colori variazione
+                const var24hClass = c.variazione_24h >= 0 ? 'var-positive' : 'var-negative';
+                const var7dClass  = c.variazione_7d >= 0 ? 'var-positive' : 'var-negative';
+                
+                const rsiColor = adv.segnale === 'COMPRA' ? 'var(--accent-green)' : (adv.segnale === 'VENDI' ? 'var(--accent-red)' : 'var(--accent-yellow)');
+                const rsiPct = Math.max(0, Math.min(100, c.rsi_14d));
+                const rsiGradient = `linear-gradient(90deg, var(--accent-green) 0%, var(--accent-yellow) 50%, var(--accent-red) 100%)`;
+                
+                const card = document.createElement('div');
+                card.className = `card ${renderSemaforo}`;
+                
+                // Pulsanti Azione in base allo stato
+                let actionBtnHTML = '';
+                if (!isInPortfolio && adv.segnale === 'COMPRA') {
+                    actionBtnHTML = `<button onclick="openBuyModal('${c.simbolo}', '${c.nome}', ${c.prezzo})" style="margin-top:1rem; width:100%; padding:0.6rem; background:var(--accent-green); color:#000; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">Acquista Ora</button>`;
+                } else if (isInPortfolio) {
+                    actionBtnHTML = `<button onclick="openSellModal('${c.simbolo}', '${c.nome}', ${realProfitEur})" style="margin-top:1rem; width:100%; padding:0.6rem; background:rgba(231,76,60,0.2); border:1px solid var(--accent-red); color:white; border-radius:6px; font-weight:bold; cursor:pointer;">Chiudi Posizione (Vendi)</button>`;
+                }
+
+                // Header e Dati Tecnici
+                card.innerHTML = `
+                    <div class="crypto-header">
+                        <div class="crypto-name">
+                            <img src="${c.logo}" alt="${c.nome}" class="crypto-logo">
+                            <div>
+                                ${c.simbolo} <span class="badge rank">#${c.rank}</span>
+                            </div>
+                        </div>
+                        <div class="crypto-price">€ ${formatter(c.prezzo)}</div>
+                    </div>
+                    
+                    <div class="tech-box">
+                        <div class="tech-row"><span>Trend 24h</span> <span class="tech-val ${var24hClass}">${c.variazione_24h > 0 ? '+' : ''}${c.variazione_24h}%</span></div>
+                        <div class="tech-row"><span>Trend 7g</span> <span class="tech-val ${var7dClass}">${c.variazione_7d > 0 ? '+' : ''}${c.variazione_7d}%</span></div>
+                        
+                        <div class="rsi-container">
+                            <div class="rsi-label">
+                                <span>RSI 14g (Iperv ← Neutro → Ipercomp)</span>
+                                <span style="color:${rsiColor}; font-weight:bold;">${c.rsi_14d}</span>
+                            </div>
+                            <div class="rsi-bar-wrap" style="background: ${rsiGradient};">
+                                <div class="rsi-marker" style="left: calc(${rsiPct}% - 1px);"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="advisor-box ${isInPortfolio ? 'ATTENDI' : adv.segnale}">
+                        <div class="adv-title">Segnale: <strong style="color:${isInPortfolio ? 'var(--accent-yellow)' : ''}">${renderSegnale}</strong></div>
+                        
+                        ${!isInPortfolio ? `
+                            <div class="adv-profit">${adv.profitto_netto_stimato_pct > 0 ? '+' : ''}${adv.profitto_netto_stimato_pct}% Netto</div>
+                            <div style="font-size:0.75rem; color:var(--text-secondary)">${statusMessage}</div>
+                        ` : `
+                            <div class="adv-profit" style="color:${realProfitPct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">
+                                ${realProfitPct >= 0 ? '+' : ''}${formatter(realProfitPct)}% (${realProfitEur >= 0 ? '+' : ''}€${formatter(realProfitEur)})
+                            </div>
+                            <div style="font-size:0.75rem; color:var(--text-secondary)">${statusMessage}</div>
+                        `}
+                        
+                        <div class="adv-targets">
+                            <div style="text-align:left;">
+                                <span>TARGET</span><br>
+                                <strong style="color:var(--accent-green)">€ ${formatter(adv.target_price)}</strong>
+                            </div>
+                            <div style="text-align:right;">
+                                <span>STOP LOSS</span><br>
+                                <strong style="color:var(--accent-red)">€ ${formatter(adv.stop_loss)}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    ${actionBtnHTML}
+                `;
+                
+                finalColTarget.appendChild(card);
+            });
+            
+            // Messaggi fallback se vuote
+            if(colOrd.COMPRA.children.length === 0) colOrd.COMPRA.innerHTML = `<div class="card text-center text-secondary">Nessuna opportunità d'acquisto rilevata.</div>`;
+            if(colOrd.VENDI.children.length === 0) colOrd.VENDI.innerHTML = `<div class="card text-center text-secondary">Nessun pericolo di svendita rilevato.</div>`;
+            if(colOrd.ATTENDI.children.length === 0) colOrd.ATTENDI.innerHTML = `<div class="card text-center text-secondary">Nessuna moneta in stallo.</div>`;
+        }
+    </script>
+</body>
+</html>
