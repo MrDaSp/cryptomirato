@@ -1,20 +1,20 @@
 # Diario di Bordo - CryptoMirato
 
-## 1 Aprile 2026 - Inizio Progetto
-Oggi abbiamo iniziato un nuovo progetto denominato **CryptoMirato**, chiaramente ispirato all'architettura e all'obiettivo di BetMirato.
-Invece di analizzare asimmetrie ("edge") nelle quote sportive, CryptoMirato punta ad essere un vero e proprio "consulente automatico" per il trading di criptovalute.
+## 1 Aprile 2026 - Conclusione Fase 1 e Evoluzione SaaS
+Oggi abbiamo completato la prima grande release di **CryptoMirato**. Il progetto si è evoluto rapidamente da un semplice cruscotto statico a una piattaforma SaaS multi-utente completa.
 
-### Obiettivi architetturali fissati:
-- **Nessun login/auth richiesto**: La pagina sarà un cruscotto statico e accessibile da chiunque. Le analisi sono univoche, pubbliche e non personalizzate (non c'è un "bankroll" da mantenere).
-- **Backend a "motore passivo"**: Uno script in Python (`scanner.py`) analizza i mercati regolarmente sfruttando l'API v3 (Tier Demo Gratuito) di CoinGecko. Lo script estrae i prezzi, il trend (1h, 24h, 7d) e i volumi, ed esegue un'analisi tecnica di base (es. RSI) per definire l'ipervenduto e le opportunità di investimento.
-- **Frontend stile BetMirato**: Pagina web molto reattiva con design dark (Glassmorphism), divisa a colonne (Kanban) che mostrano a colpo d'occhio cosa compare (Verde), a cosa stare attenti (Giallo) e cosa lasciar perdere o vendere (Rosso).
+### Modifiche Architetturali e Nuove Funzionalità:
+- **Autenticazione Supabase (SSO)**: Abbiamo integrato Supabase Auth utilizzando le stesse credenziali di BetMirato. Questo permette un "Single Sign-On" tra le due piattaforme. Ora l'accesso è protetto da una schermata di Login/Registrazione coerente con lo stile DaniTech.
+- **Sezione Bankroll Personale**: Implementato un sistema di tracciamento profitti in tempo reale. Ogni utente può "Acquistare" virtualmente una moneta e vedere il proprio capitale investito, il valore attuale e il P&L Netto (già decurtato delle fee dello 0.2%).
+- **SuperAdmin Dashboard**: L'email `dani3d.drone@gmail.com` è stata impostata come SuperAdmin. Questo sblocca un pannello esclusivo per monitorare lo stato del sistema e il numero di utenti registrati (stima basata su log incrociati).
+- **UX & Design**: 
+  - Allineamento estetico totale con BetMirato (Glassmorphism, font Inter/JetBrains Mono).
+  - Spostamento della Guida nell'icona "( i )" di fianco al logo.
+  - Supporto al tasto **Invio** nella schermata di login per un accesso rapido.
+  - Indicazione esatta degli Exchange supportati (Nexo/Binance) su ogni card.
+- **Scanner Python Ottimizzato**: Aggiunta una blacklist per stablecoin e token non scambiabili (WBT, LEO, etc.), garantendo che i segnali siano sempre su asset reali e liquidi.
 
-### Il "Consulente Automatico"
-A differenza di un semplice grafico, il software genererà veri e propri "segnali":
-1.  **Cosa comprare**: Algoritmo di screening sulle top monete alla ricerca di anomalie.
-2.  **A quanto vendere (Target)**: Generazione di una stima di profitto.
-3.  **Calcolo Fee Reali**: Quando si indica l'edge o il potenziale profitto di un trade, verranno lette/stimate (es. 0.1% a transazione su Binance) le fee, così da mostrare all'analista che sta valutando il trade un valore più realistico di "Profitto Netto".
-4.  **Take Profit / Stop Loss**: Suggerimenti dinamici basati sull'intensità e la rapidità dei movimenti di mercato registrati.
+### Stato del Progetto:
+Il codice è stato pushato con successo sul repository GitHub `mrdasp/cryptomirato` e il sito è live su GitHub Pages. Le GitHub Actions aggiornano i dati ogni 30 minuti.
 
-Abbiamo richiesto con successo la API Key di CoinGecko (versione Demo Free).
-I prossimi step consisteranno nella creazione dello scanner Python.
+Il sistema è ora robusto, professionale e pronto per l'uso quotidiano.
