@@ -12,6 +12,7 @@ Oggi abbiamo completato la prima grande release di **CryptoMirato**. Il progetto
   - Spostamento della Guida nell'icona "( i )" di fianco al logo.
   - Supporto al tasto **Invio** nella schermata di login per un accesso rapido.
   - Indicazione esatta degli Exchange supportati (Nexo/Binance) su ogni card.
+  - **Centratura Globale delle Statistiche**: Implementato un layout a 3 colonne per l'header che forza le statistiche di mercato (Acquisti/Hold/Vendite) esattamente al centro geometrico della pagina, garantendo perfetta simmetria visiva.
 - **Scanner Python Ottimizzato**: Aggiunta una blacklist per stablecoin e token non scambiabili (WBT, LEO, etc.), garantendo che i segnali siano sempre su asset reali e liquidi.
 
 ### Stato del Progetto:
